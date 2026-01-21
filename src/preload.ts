@@ -109,7 +109,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Browser redirect - opens gallery in default browser after upload
   openGalleryInBrowser: (galleryId: string): Promise<{ success: boolean; error?: string; url?: string }> =>
-    ipcRenderer.invoke('open-gallery-in-browser', galleryId)
+    ipcRenderer.invoke('open-gallery-in-browser', galleryId),
+
+  // Get web URL from config
+  getWebUrl: (): Promise<string> => ipcRenderer.invoke('get-web-url')
 })
 
 // Type definitions for renderer
@@ -139,6 +142,7 @@ declare global {
       onAuthComplete: (callback: (data: AuthCompleteData) => void) => void
       onAuthCleared: (callback: () => void) => void
       openGalleryInBrowser: (galleryId: string) => Promise<{ success: boolean; error?: string; url?: string }>
+      getWebUrl: () => Promise<string>
     }
   }
 }

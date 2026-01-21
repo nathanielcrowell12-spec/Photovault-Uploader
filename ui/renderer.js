@@ -41,8 +41,11 @@ async function checkAuthentication() {
     }
 
     // If no stored auth, check if user is signed in via web browser
+    // Note: This fallback rarely works due to cross-origin restrictions
+    // The main auth flow is via protocol handler (photovault://)
     console.log('[Desktop Auth] No stored auth, checking web session...')
-    const config = await fetch('http://localhost:3000/api/auth/check-session', {
+    const webUrl = await window.electronAPI.getWebUrl()
+    const config = await fetch(`${webUrl}/api/auth/check-session`, {
       credentials: 'include'
     }).catch(() => null)
 

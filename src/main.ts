@@ -860,6 +860,18 @@ ipcMain.handle('open-gallery-in-browser', async (_event, galleryId: string): Pro
   }
 })
 
+// Get web URL from config
+ipcMain.handle('get-web-url', async (): Promise<string> => {
+  let webUrl = process.env.PHOTOVAULT_WEB_URL || 'https://www.photovault.photo'
+  try {
+    const config = require('../config.json')
+    webUrl = config.photoVaultWebUrl || webUrl
+  } catch {
+    // Config file not found, use default
+  }
+  return webUrl
+})
+
 // Forward upload progress to renderer (after app is ready)
 app.whenReady().then(() => {
   if (uploadManager) {
