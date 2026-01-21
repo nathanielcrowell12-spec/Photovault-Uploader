@@ -69,7 +69,8 @@ let devServerPort: number = 57123
 // Debouncing for auth protocol handler to prevent popup spam
 let lastProcessedAuthToken: string | null = null
 let lastWindowFocusTime: number = 0
-const WINDOW_FOCUS_COOLDOWN_MS = 2000 // Only focus window once per 2 seconds
+const WINDOW_FOCUS_COOLDOWN_MS = 5000 // Only focus window once per 5 seconds
+let authCompleted = false // Once auth is done, stop stealing focus entirely
 
 // Use secure persistent storage for auth instead of in-memory variables
 const authStore = new SecureAuthStore()
@@ -285,9 +286,10 @@ if (!gotTheLock) {
   app.quit()
 } else {
   app.on('second-instance', (event: Electron.Event, commandLine: string[], workingDirectory: string): void => {
-    // Debounce window focus to prevent popup spam
+    // Once auth is complete, don't steal focus anymore - user is working
+    // Only focus if this is a fresh launch (no auth yet)
     const now = Date.now()
-    if (mainWindow && (now - lastWindowFocusTime) > WINDOW_FOCUS_COOLDOWN_MS) {
+    if (mainWindow && !authCompleted && (now - lastWindowFocusTime) > WINDOW_FOCUS_COOLDOWN_MS) {
       lastWindowFocusTime = now
       if (mainWindow.isMinimized()) mainWindow.restore()
       mainWindow.focus()
@@ -313,6 +315,7 @@ if (!gotTheLock) {
 
         if (token && userIdParam) {
           lastProcessedAuthToken = token
+          authCompleted = true // Stop stealing focus after successful auth
           logger.info('Auth credentials received from web browser (Windows)', {
             hasGalleryId: !!galleryIdParam,
             galleryId: galleryIdParam
@@ -589,6 +592,7 @@ app.whenReady().then(async () => {
               }
 
               tokenValid = true
+              authCompleted = true // Stop stealing focus - user is authenticated
               validatedUserIdForEvent = validatedUserId
             }
           }
