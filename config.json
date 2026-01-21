@@ -1,0 +1,9 @@
+{
+  "supabaseUrl": "https://gqmycgopitxpjkxzrnyv.supabase.co",
+  "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdxbXljZ29waXR4cGpreHpybnl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk3NDMzNTYsImV4cCI6MjA3NTMxOTM1Nn0.SnVgf6NQ0jMvUz7n6kxB8u2TsJt846KOImGYocpxbjw",
+  "photoVaultWebUrl": "https://www.photovault.photo",
+  "environment": "production",
+  "autoUpdate": false,
+  "appName": "PhotoVault Desktop",
+  "version": "1.0.0"
+}
