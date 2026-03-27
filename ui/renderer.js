@@ -6,6 +6,7 @@ let currentUploadId = null
 
 // Authentication state
 let currentUserId = null
+let currentGalleryId = null  // Gallery ID from web wizard — upload to existing gallery
 let isAuthenticated = false
 
 // DOM Elements
@@ -210,11 +211,13 @@ uploadBtn.addEventListener('click', async () => {
   }
 
   // Upload all files to the same gallery
+  console.log('[Desktop Upload] Starting upload — galleryId:', currentGalleryId)
   const result = await window.electronAPI.startUpload({
     filePaths: selectedFiles, // Pass array of files
     userId: currentUserId,
     galleryName: galleryNameInput.value.trim(),
-    platform: 'PhotoVault'
+    platform: 'PhotoVault',
+    galleryId: currentGalleryId || undefined  // Use existing gallery if launched from web wizard
   })
 
   if (result.success) {
@@ -433,7 +436,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.electronAPI.onAuthComplete((data) => {
     isAuthenticated = true
     currentUserId = data.userId
+    currentGalleryId = data.galleryId || null
+    console.log('[Desktop Auth] Auth complete — galleryId:', currentGalleryId)
     updateUIForAuthenticatedState()
+    // If we have a gallery ID from the web, pre-fill the gallery name field
+    if (currentGalleryId && galleryNameInput) {
+      galleryNameInput.value = galleryNameInput.value || 'Existing Gallery'
+      galleryNameInput.disabled = true  // Lock — we're uploading to an existing gallery
+      console.log('[Desktop Auth] Locked gallery name — uploading to existing gallery:', currentGalleryId)
+    }
     showSuccess('Successfully signed in!')
   })
 
@@ -463,6 +474,125 @@ document.addEventListener('DOMContentLoaded', async () => {
       await clearQueue()
     })
   }
+
+  // Check for incomplete uploads on startup
+  checkIncompleteUploads()
+
+  // Listen for incomplete uploads updates from main process
+  if (window.electronAPI.onIncompleteUploads) {
+    window.electronAPI.onIncompleteUploads((uploads) => {
+      if (uploads && uploads.length > 0) {
+        document.getElementById('incomplete-uploads-section').style.display = 'block'
+        renderIncompleteUploads(uploads)
+      } else {
+        document.getElementById('incomplete-uploads-section').style.display = 'none'
+      }
+    })
+  }
 })
 
+// ===== INCOMPLETE UPLOADS MANAGEMENT =====
 
+async function checkIncompleteUploads() {
+  try {
+    const incompleteUploads = await window.electronAPI.getIncompleteUploads()
+    const incompleteSection = document.getElementById('incomplete-uploads-section')
+
+    if (incompleteUploads && incompleteUploads.length > 0) {
+      incompleteSection.style.display = 'block'
+      renderIncompleteUploads(incompleteUploads)
+    } else {
+      incompleteSection.style.display = 'none'
+    }
+  } catch (error) {
+    console.error('Error checking incomplete uploads:', error)
+  }
+}
+
+function renderIncompleteUploads(uploads) {
+  const incompleteList = document.getElementById('incomplete-uploads-list')
+
+  incompleteList.innerHTML = uploads.map(upload => {
+    const completedCount = upload.completedFiles || 0
+    const totalCount = upload.totalFiles || upload.filePaths?.length || 0
+    const remainingCount = totalCount - completedCount
+    const progress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
+    const lastUpdated = upload.updatedAt ? new Date(upload.updatedAt).toLocaleDateString() : 'Unknown'
+
+    return `
+      <div class="incomplete-upload-item" data-upload-id="${upload.uploadId}">
+        <div class="incomplete-upload-info">
+          <strong>${upload.galleryName || 'Untitled Gallery'}</strong>
+          <p>${completedCount} of ${totalCount} files uploaded (${progress}%) - ${remainingCount} remaining</p>
+          <p class="last-activity">Last activity: ${lastUpdated}</p>
+        </div>
+        <div class="incomplete-upload-actions">
+          <button class="resume-btn" data-upload-id="${upload.uploadId}">▶ Resume</button>
+          <button class="discard-btn" data-upload-id="${upload.uploadId}">✕ Discard</button>
+        </div>
+      </div>
+    `
+  }).join('')
+
+  // Attach event listeners to buttons
+  attachIncompleteUploadHandlers()
+}
+
+function attachIncompleteUploadHandlers() {
+  // Resume buttons
+  document.querySelectorAll('.incomplete-upload-item .resume-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const uploadId = e.target.dataset.uploadId
+      btn.disabled = true
+      btn.textContent = 'Resuming...'
+
+      try {
+        const result = await window.electronAPI.resumeIncompleteUpload(uploadId)
+
+        if (result.success) {
+          showStatus('Upload resumed! Continuing where you left off...')
+          // Refresh the incomplete uploads list
+          checkIncompleteUploads()
+        } else {
+          showError(`Failed to resume: ${result.error}`)
+          btn.disabled = false
+          btn.textContent = '▶ Resume'
+        }
+      } catch (error) {
+        console.error('Error resuming upload:', error)
+        showError('Error resuming upload. Please try again.')
+        btn.disabled = false
+        btn.textContent = '▶ Resume'
+      }
+    })
+  })
+
+  // Discard buttons
+  document.querySelectorAll('.incomplete-upload-item .discard-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const uploadId = e.target.dataset.uploadId
+
+      if (confirm('Are you sure you want to discard this incomplete upload? This will NOT delete the gallery or photos already uploaded.')) {
+        btn.disabled = true
+        btn.textContent = 'Discarding...'
+
+        try {
+          const result = await window.electronAPI.cancelIncompleteUpload(uploadId)
+
+          if (result.success) {
+            showStatus('Incomplete upload discarded. The gallery with existing photos remains on the server.')
+            checkIncompleteUploads()
+          } else {
+            showError('Failed to discard upload.')
+            btn.disabled = false
+            btn.textContent = '✕ Discard'
+          }
+        } catch (error) {
+          console.error('Error discarding upload:', error)
+          btn.disabled = false
+          btn.textContent = '✕ Discard'
+        }
+      }
+    })
+  })
+}

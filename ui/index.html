@@ -324,6 +324,92 @@
       padding: 6px 12px;
       font-size: 12px;
     }
+
+    /* Incomplete uploads styles */
+    .incomplete-uploads-section {
+      margin-bottom: 20px;
+      padding: 15px;
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 8px;
+    }
+
+    .incomplete-uploads-section h4 {
+      margin: 0 0 10px 0;
+      font-size: 14px;
+      color: #856404;
+    }
+
+    .incomplete-uploads-section .section-description {
+      margin: 0 0 15px 0;
+      font-size: 12px;
+      color: #6c757d;
+    }
+
+    .incomplete-upload-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background: white;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      border: 1px solid #e0e0e0;
+    }
+
+    .incomplete-upload-info {
+      flex: 1;
+    }
+
+    .incomplete-upload-info strong {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+
+    .incomplete-upload-info p {
+      margin: 0;
+      font-size: 12px;
+      color: #6c757d;
+    }
+
+    .incomplete-upload-info .last-activity {
+      font-size: 11px;
+      color: #999;
+    }
+
+    .incomplete-upload-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .resume-btn {
+      background: #28a745;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .resume-btn:hover:not(:disabled) {
+      background: #218838;
+    }
+
+    .discard-btn {
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .discard-btn:hover:not(:disabled) {
+      background: #c82333;
+    }
   </style>
 </head>
 <body>
@@ -380,6 +466,13 @@
           <div id="progress-fill" class="progress-fill"></div>
         </div>
         <p id="progress-text" class="progress-text">Uploading... 0%</p>
+      </div>
+
+      <!-- Incomplete Uploads Section (Resume) -->
+      <div id="incomplete-uploads-section" class="incomplete-uploads-section" style="display: none;">
+        <h4>📋 Incomplete Uploads</h4>
+        <p class="section-description">These uploads were interrupted. Click "Resume" to continue where you left off.</p>
+        <div id="incomplete-uploads-list"></div>
       </div>
 
       <!-- Failed Uploads Queue -->
